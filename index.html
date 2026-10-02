@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Trishna — Luxury Portfolio Hero</title>
+  
+  <!-- Google Fonts: Dancing Script & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* Reset & Base Setup */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    :root {
+      --bg-red: #ec0d07;
+      --text-white: #ffffff;
+      --frosted-bg: rgba(255, 255, 255, 0.12);
+      --frosted-border: rgba(255, 255, 255, 0.28);
+      --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-cursive: 'Dancing Script', cursive;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-red);
+      color: var(--text-white);
+      font-family: var(--font-main);
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: none; /* Replaced by custom glowing cursor */
+    }
+
+    /* FULL VIEWPORT ZERO-TRANSFORM CANVAS CONTAINER */
+    .hero-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: var(--bg-red);
+      /* Strictly NO perspective, rotateX, or rotateY */
+    }
+
+    #characterCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      background-color: var(--bg-red);
+      /* Strictly NO 3D transform */
+    }
+
+    /* FLOATING FROSTED-GLASS NAVIGATION PILL */
+    .header-nav {
+      position: fixed;
+      top: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      background: var(--frosted-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--frosted-border);
+      border-radius: 9999px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+      transition: all 0.3s ease;
+    }
+
+    .header-nav:hover {
+      border-color: rgba(255, 255, 255, 0.45);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+    }
+
+    .nav-item {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 18px;
+      font-family: var(--font-main);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.9);
+      text-decoration: none;
+      border-radius: 9999px;
+      transition: all 0.22s ease;
+      cursor: none;
+    }
+
+    .nav-item:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.18);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* HERO TYPOGRAPHY (BOTTOM-LEFT) */
+    .hero-content {
+      position: absolute;
+      bottom: 48px;
+      left: 52px;
+      z-index: 40;
+      max-width: 440px;
+      pointer-events: none; /* Allows canvas interaction beneath, buttons re-enable */
+    }
+
+    @media (max-width: 768px) {
+      .hero-content {
+        left: 24px;
+        bottom: 32px;
+        right: 24px;
+        max-width: 100%;
+      }
+    }
+
+    .greeting-text {
+      font-family: var(--font-main);
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.92);
+      margin-bottom: 2px;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    }
+
+    .name-title {
+      font-family: var(--font-cursive);
+      font-size: clamp(64px, 7.8vw, 108px);
+      font-weight: 700;
+      line-height: 1.05;
+      color: #ffffff;
+      margin-bottom: 16px;
+      text-shadow: 0 10px 24px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .hero-bio {
+      font-family: var(--font-main);
+      font-size: 15px;
+      font-weight: 400;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.88);
+      max-width: 340px;
+      margin-bottom: 28px;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    }
+
+    /* ACTION BUTTONS */
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      pointer-events: auto;
+    }
+
+    .btn-resume {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 26px;
+      background: #ffffff;
+      color: #0d0d0d;
+      font-family: var(--font-main);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      border-radius: 9999px;
+      text-decoration: none;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: none;
+    }
+
+    .btn-resume:hover {
+      background: #f0f0f0;
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-resume svg {
+      width: 15px;
+      height: 15px;
+      transition: transform 0.25s ease;
+    }
+
+    .btn-resume:hover svg {
+      transform: translate(2px, -2px);
+    }
+
+    .btn-talk {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 26px;
+      background: var(--frosted-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      color: #ffffff;
+      font-family: var(--font-main);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      border-radius: 9999px;
+      text-decoration: none;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: none;
+    }
+
+    .btn-talk:hover {
+      background: rgba(255, 255, 255, 0.22);
+      border-color: #ffffff;
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+    }
+
+    /* CUSTOM MAGNETIC CURSOR */
+    .cursor-dot {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 8px;
+      height: 8px;
+      background-color: #ffffff;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.95), 0 0 20px rgba(255, 255, 255, 0.6);
+      transition: opacity 0.2s ease;
+    }
+
+    .cursor-aura {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 32px;
+      height: 32px;
+      border: 1.5px solid rgba(255, 255, 255, 0.75);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9998;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 24px rgba(255, 255, 255, 0.25);
+      transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                  height 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                  background-color 0.2s ease,
+                  border-color 0.2s ease;
+    }
+
+    .cursor-aura.hovered {
+      width: 60px;
+      height: 60px;
+      background-color: rgba(255, 255, 255, 0.16);
+      border-color: rgba(255, 255, 255, 0.95);
+      box-shadow: 0 0 32px rgba(255, 255, 255, 0.4);
+    }
+
+    /* PRELOAD LOADER OVERLAY */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg-red);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+
+    .loading-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .loader-spinner {
+      width: 44px;
+      height: 44px;
+      border: 3px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .loader-text {
+      font-size: 13px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOADING OVERLAY -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loader-spinner"></div>
+    <div class="loader-text" id="loaderText">LOADING ASSETS 0%</div>
+  </div>
+
+  <!-- FLOATING FROSTED-GLASS HEADER PILL -->
+  <nav class="header-nav interactive-hover" aria-label="Main Navigation">
+    <a href="#work" class="nav-item interactive-hover">[WORK]</a>
+    <a href="#about" class="nav-item interactive-hover">[ABOUT]</a>
+    <a href="#contact" class="nav-item interactive-hover">[CONTACT]</a>
+  </nav>
+
+  <!-- FULLSCREEN ZERO-TRANSFORM CANVAS CONTAINER -->
+  <div class="hero-container">
+    <canvas id="characterCanvas"></canvas>
+
+    <!-- HERO TYPOGRAPHY (BOTTOM-LEFT) -->
+    <div class="hero-content">
+      <div class="greeting-text">Hi, I'm</div>
+      <h1 class="name-title">Trishna</h1>
+      <p class="hero-bio">
+        Full Stack Developer specializing in high-performance architectures, interactive computing, and ultra-refined digital experiences.
+      </p>
+      
+      <div class="hero-actions">
+        <a href="#resume" class="btn-resume interactive-hover">
+          <span>Resume</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="7" y1="17" x2="17" y2="7"></line>
+            <polyline points="7 7 17 7 17 17"></polyline>
+          </svg>
+        </a>
+        <a href="#contact" class="btn-talk interactive-hover">
+          <span>Let's Talk</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOM MAGNETIC CURSOR -->
+  <div class="cursor-dot" id="cursorDot"></div>
+  <div class="cursor-aura" id="cursorAura"></div>
+
+  <script>
+    (function() {
+      // 1. CONFIGURATION & STATE
+      const BG_HEX = "#ec0d07";
+      const TOTAL_FRAMES = 64;
+      const FRAMES_DIR = "/frames/";
+      const CENTER_SRC = "/frames/center.webp";
+      const DEADZONE_RADIUS_RATIO = 0.12; // 12% screen radius
+      const LERP_FACTOR = 0.26;           // ~35ms zero-lag response
+
+      const canvas = document.getElementById("characterCanvas");
+      const ctx = canvas.getContext("2d", { alpha: false });
+      const loadingOverlay = document.getElementById("loadingOverlay");
+      const loaderText = document.getElementById("loaderText");
+      const cursorDot = document.getElementById("cursorDot");
+      const cursorAura = document.getElementById("cursorAura");
+
+      const frames = [];
+      let centerImage = null;
+      let loadedCount = 0;
+      let isReady = false;
+
+      // Cursor positions
+      const urlParams = new URLSearchParams(window.location.search);
+      let mouseX = urlParams.has("x") ? parseFloat(urlParams.get("x")) : window.innerWidth / 2;
+      let mouseY = urlParams.has("y") ? parseFloat(urlParams.get("y")) : window.innerHeight * 0.39;
+      let auraX = mouseX;
+      let auraY = mouseY;
+      let mouseActive = urlParams.has("x");
+
+      // Character angular tracking state
+      let currentAngle = 0; // Starts at 0 rad (RIGHT)
+
+      // 2. PRELOAD ALL 64 WEBP FRAMES + CENTER
+      const totalImagesToLoad = TOTAL_FRAMES + 1;
+
+      function updateLoader() {
+        loadedCount++;
+        const pct = Math.round((loadedCount / totalImagesToLoad) * 100);
+        loaderText.textContent = `LOADING ASSETS ${pct}%`;
+        if (loadedCount === totalImagesToLoad) {
+          isReady = true;
+          loadingOverlay.style.display = "none";
+          loadingOverlay.classList.add("hidden");
+          requestAnimationFrame(renderLoop);
+        }
+      }
+
+      // Preload center image
+      centerImage = new Image();
+      centerImage.src = CENTER_SRC;
+      centerImage.onload = updateLoader;
+      centerImage.onerror = () => {
+        // Fallback path if hosted at root
+        centerImage.src = "frames/center.webp";
+        centerImage.onload = updateLoader;
+      };
+
+      // Preload 64 circular frames
+      for (let i = 0; i < TOTAL_FRAMES; i++) {
+        const img = new Image();
+        img.src = `${FRAMES_DIR}frame_${i}.webp`;
+        img.onload = updateLoader;
+        img.onerror = () => {
+          img.src = `frames/frame_${i}.webp`;
+          img.onload = updateLoader;
+        };
+        frames.push(img);
+      }
+
+      // 3. CURSOR & INTERACTION LISTENERS
+      window.addEventListener("mousemove", (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        mouseActive = true;
+        cursorDot.style.left = `${mouseX}px`;
+        cursorDot.style.top = `${mouseY}px`;
+      });
+
+      window.addEventListener("mouseleave", () => {
+        mouseActive = false;
+      });
+
+      // Interactive hover detection for cursor aura
+      const interactiveElements = document.querySelectorAll(".interactive-hover");
+      interactiveElements.forEach((el) => {
+        el.addEventListener("mouseenter", () => cursorAura.classList.add("hovered"));
+        el.addEventListener("mouseleave", () => cursorAura.classList.remove("hovered"));
+      });
+
+      // 4. SHORTEST-PATH CIRCULAR ANGULAR LERP
+      function lerpAngle(start, end, factor) {
+        // Find shortest angular difference in range [-PI, PI]
+        let diff = (end - start + Math.PI) % (Math.PI * 2) - Math.PI;
+        if (diff < -Math.PI) diff += Math.PI * 2;
+        return start + diff * factor;
+      }
+
+      // 5. 60 FPS ZERO-GHOSTING CANVAS RENDER LOOP
+      function renderLoop() {
+        // Update smooth trailing cursor aura
+        auraX += (mouseX - auraX) * 0.22;
+        auraY += (mouseY - auraY) * 0.22;
+        cursorAura.style.left = `${auraX}px`;
+        cursorAura.style.top = `${auraY}px`;
+
+        // Handle canvas sizing & Retina DPR
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        const dpr = window.devicePixelRatio || 1;
+
+        if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
+          canvas.width = width * dpr;
+          canvas.height = height * dpr;
+        }
+
+        ctx.save();
+        ctx.scale(dpr, dpr);
+
+        // Fill background seamlessly
+        ctx.fillStyle = BG_HEX;
+        ctx.fillRect(0, 0, width, height);
+
+        if (isReady && frames.length === TOTAL_FRAMES) {
+          // Source dimension (1920x1080)
+          const srcW = 1920;
+          const srcH = 1080;
+
+          // Object-fit: cover scaling
+          const scale = Math.max(width / srcW, height / srcH);
+          const dw = srcW * scale;
+          const dh = srcH * scale;
+          const dx = (width - dw) / 2;
+          const dy = (height - dh) / 2;
+
+          // Face Center coordinates in viewport space
+          // Source face center is at (960, 420)
+          const faceScreenX = dx + 0.50 * dw;
+          const faceScreenY = dy + 0.38889 * dh;
+
+          // Cursor distance & deadzone check
+          const deltaX = mouseX - faceScreenX;
+          const deltaY = mouseY - faceScreenY;
+          const dist = Math.hypot(deltaX, deltaY);
+
+          // Deadzone radius: ~12% of screen dimension
+          const deadzoneRadius = Math.min(width, height) * DEADZONE_RADIUS_RATIO;
+
+          let targetFrame;
+
+          if (!mouseActive || dist < deadzoneRadius) {
+            // CENTER EYE CONTACT (DEADZONE): Switch directly to center.webp
+            targetFrame = centerImage;
+          } else {
+            // Smooth cursor tracking: calculate target angle
+            const targetAngle = Math.atan2(deltaY, deltaX);
+
+            // Shortest path circular angular lerp
+            currentAngle = lerpAngle(currentAngle, targetAngle, LERP_FACTOR);
+
+            // Map smoothed angle to frame index 0..63
+            const twoPi = Math.PI * 2;
+            const normalizedAngle = ((currentAngle % twoPi) + twoPi) % twoPi;
+            const frameIndex = Math.round((normalizedAngle / twoPi) * TOTAL_FRAMES) % TOTAL_FRAMES;
+
+            targetFrame = frames[frameIndex] || centerImage;
+          }
+
+          // ZERO-GHOSTING: Draw EXACTLY ONE crisp frame at 100% opacity
+          // No alpha-blending, no multiple layered draw calls
+          ctx.drawImage(targetFrame, dx, dy, dw, dh);
+        }
+
+        ctx.restore();
+        requestAnimationFrame(renderLoop);
+      }
+
+    })();
+  </script>
+</body>
+</html>
