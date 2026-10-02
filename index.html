@@ -401,12 +401,24 @@
         const pct = Math.round((loadedCount / totalImagesToLoad) * 100);
         loaderText.textContent = `LOADING ASSETS ${pct}%`;
         if (loadedCount === totalImagesToLoad) {
-          isReady = true;
-          loadingOverlay.style.display = "none";
-          loadingOverlay.classList.add("hidden");
-          requestAnimationFrame(renderLoop);
+          showContent();
         }
       }
+
+      function showContent() {
+        isReady = true;
+        loadingOverlay.style.display = "none";
+        loadingOverlay.classList.add("hidden");
+        requestAnimationFrame(renderLoop);
+      }
+
+      // Safety timeout: Show content after 3 seconds even if images haven't loaded
+      setTimeout(() => {
+        if (!isReady) {
+          console.warn("Image loading timeout - showing content with fallback");
+          showContent();
+        }
+      }, 3000);
 
       // Preload center image
       centerImage = new Image();
@@ -416,6 +428,10 @@
         // Fallback path if hosted at root
         centerImage.src = "frames/center.webp";
         centerImage.onload = updateLoader;
+        centerImage.onerror = () => {
+          // Still count as loaded even if it fails
+          updateLoader();
+        };
       };
 
       // Preload 64 circular frames
@@ -424,8 +440,13 @@
         img.src = `${FRAMES_DIR}frame_${i}.webp`;
         img.onload = updateLoader;
         img.onerror = () => {
+          // Try alternate path
           img.src = `frames/frame_${i}.webp`;
           img.onload = updateLoader;
+          img.onerror = () => {
+            // Still count as loaded even if it fails
+            updateLoader();
+          };
         };
         frames.push(img);
       }
@@ -483,54 +504,59 @@
         ctx.fillStyle = BG_HEX;
         ctx.fillRect(0, 0, width, height);
 
-        if (isReady && frames.length === TOTAL_FRAMES) {
-          // Source dimension (1920x1080)
-          const srcW = 1920;
-          const srcH = 1080;
+        if (isReady) {
+          // Try to render character frames if available
+          if (frames.length > 0 && centerImage) {
+            // Source dimension (1920x1080)
+            const srcW = 1920;
+            const srcH = 1080;
 
-          // Object-fit: cover scaling
-          const scale = Math.max(width / srcW, height / srcH);
-          const dw = srcW * scale;
-          const dh = srcH * scale;
-          const dx = (width - dw) / 2;
-          const dy = (height - dh) / 2;
+            // Object-fit: cover scaling
+            const scale = Math.max(width / srcW, height / srcH);
+            const dw = srcW * scale;
+            const dh = srcH * scale;
+            const dx = (width - dw) / 2;
+            const dy = (height - dh) / 2;
 
-          // Face Center coordinates in viewport space
-          // Source face center is at (960, 420)
-          const faceScreenX = dx + 0.50 * dw;
-          const faceScreenY = dy + 0.38889 * dh;
+            // Face Center coordinates in viewport space
+            // Source face center is at (960, 420)
+            const faceScreenX = dx + 0.50 * dw;
+            const faceScreenY = dy + 0.38889 * dh;
 
-          // Cursor distance & deadzone check
-          const deltaX = mouseX - faceScreenX;
-          const deltaY = mouseY - faceScreenY;
-          const dist = Math.hypot(deltaX, deltaY);
+            // Cursor distance & deadzone check
+            const deltaX = mouseX - faceScreenX;
+            const deltaY = mouseY - faceScreenY;
+            const dist = Math.hypot(deltaX, deltaY);
 
-          // Deadzone radius: ~12% of screen dimension
-          const deadzoneRadius = Math.min(width, height) * DEADZONE_RADIUS_RATIO;
+            // Deadzone radius: ~12% of screen dimension
+            const deadzoneRadius = Math.min(width, height) * DEADZONE_RADIUS_RATIO;
 
-          let targetFrame;
+            let targetFrame;
 
-          if (!mouseActive || dist < deadzoneRadius) {
-            // CENTER EYE CONTACT (DEADZONE): Switch directly to center.webp
-            targetFrame = centerImage;
-          } else {
-            // Smooth cursor tracking: calculate target angle
-            const targetAngle = Math.atan2(deltaY, deltaX);
+            if (!mouseActive || dist < deadzoneRadius) {
+              // CENTER EYE CONTACT (DEADZONE): Switch directly to center.webp
+              targetFrame = centerImage;
+            } else {
+              // Smooth cursor tracking: calculate target angle
+              const targetAngle = Math.atan2(deltaY, deltaX);
 
-            // Shortest path circular angular lerp
-            currentAngle = lerpAngle(currentAngle, targetAngle, LERP_FACTOR);
+              // Shortest path circular angular lerp
+              currentAngle = lerpAngle(currentAngle, targetAngle, LERP_FACTOR);
 
-            // Map smoothed angle to frame index 0..63
-            const twoPi = Math.PI * 2;
-            const normalizedAngle = ((currentAngle % twoPi) + twoPi) % twoPi;
-            const frameIndex = Math.round((normalizedAngle / twoPi) * TOTAL_FRAMES) % TOTAL_FRAMES;
+              // Map smoothed angle to frame index 0..63
+              const twoPi = Math.PI * 2;
+              const normalizedAngle = ((currentAngle % twoPi) + twoPi) % twoPi;
+              const frameIndex = Math.round((normalizedAngle / twoPi) * TOTAL_FRAMES) % TOTAL_FRAMES;
 
-            targetFrame = frames[frameIndex] || centerImage;
+              targetFrame = frames[frameIndex] || centerImage;
+            }
+
+            // ZERO-GHOSTING: Draw EXACTLY ONE crisp frame at 100% opacity
+            // No alpha-blending, no multiple layered draw calls
+            if (targetFrame && targetFrame.complete) {
+              ctx.drawImage(targetFrame, dx, dy, dw, dh);
+            }
           }
-
-          // ZERO-GHOSTING: Draw EXACTLY ONE crisp frame at 100% opacity
-          // No alpha-blending, no multiple layered draw calls
-          ctx.drawImage(targetFrame, dx, dy, dw, dh);
         }
 
         ctx.restore();
